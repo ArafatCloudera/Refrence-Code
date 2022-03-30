@@ -57,33 +57,6 @@ public final class S3GatewayMetrics implements MetricsSource {
   private @Metric MutableCounterLong listMultipartUploadsOpsSuccess;
   private @Metric MutableCounterLong multipartUploadsOpsFailure;
 
-  // RootEndpoint
-  private @Metric MutableCounterLong listS3BucketsSuccess;
-  private @Metric MutableCounterLong listS3BucketsFailure;
-
-  // ObjectEndpoint
-  private @Metric MutableCounterLong createMultipartKeySuccess;
-  private @Metric MutableCounterLong createMultipartKeyFailure;
-  private @Metric MutableCounterLong copyObjectSuccess;
-  private @Metric MutableCounterLong copyObjectFailure;
-  private @Metric MutableCounterLong createKeySuccess;
-  private @Metric MutableCounterLong createKeyFailure;
-  private @Metric MutableCounterLong listPartsSuccess;
-  private @Metric MutableCounterLong listPartsFailure;
-  private @Metric MutableCounterLong getKeySuccess;
-  private @Metric MutableCounterLong getKeyFailure;
-  private @Metric MutableCounterLong headKeySuccess;
-  private @Metric MutableCounterLong headKeyFailure;
-  private @Metric MutableCounterLong initMultiPartUploadSuccess;
-  private @Metric MutableCounterLong initMultiPartUploadFailure;
-  private @Metric MutableCounterLong completeMultiPartUploadSuccess;
-  private @Metric MutableCounterLong completeMultiPartUploadFailure;
-  private @Metric MutableCounterLong abortMultiPartUploadSuccess;
-  private @Metric MutableCounterLong abortMultiPartUploadFailure;
-  private @Metric MutableCounterLong deleteKeySuccess;
-  private @Metric MutableCounterLong deleteKeyFailure;
-
-
   /**
    * Private constructor.
    */
@@ -134,8 +107,7 @@ public final class S3GatewayMetrics implements MetricsSource {
     listMultipartUploadsSuccess.snapshot(recordBuilder, true);
     listMultipartUploadsFailure.snapshot(recordBuilder, true);
   }
-
-  // INC
+  
   public void incGetBucketSuccess() {
     getBucketSuccess.incr();
   }
@@ -182,7 +154,6 @@ public final class S3GatewayMetrics implements MetricsSource {
     headBucketSuccess.incr();
   }
 
-
   public void incDeleteBucketSuccess() {
     deleteBucketSuccess.incr();
   }
@@ -191,15 +162,6 @@ public final class S3GatewayMetrics implements MetricsSource {
     deleteBucketFailure.incr();
   }
 
-  public void incHeadKeySuccess() {
-    headKeySuccess.incr();
-  }
-
-  public void incHeadKeyFailure() {
-    headKeyFailure.incr();
-  }
-
-  // GET
   public long getListS3BucketsSuccess() {
     return listS3BucketsSuccess.value();
   }
