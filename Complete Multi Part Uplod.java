@@ -51,9 +51,10 @@ public class TestMultipartUploadComplete {
     Response response = REST.put(OzoneConsts.S3_BUCKET, key, content.length(),
         partNumber, uploadID, body);
     Part part = new Part();
+    // Extracting the ETAG from the response and using it as a unique identifier for the part 
     part.seteTag(response.getHeaderString("ETag"));
     part.setPartNumber(partNumber);
-
+    
     return part;
   }
 
@@ -97,6 +98,7 @@ public class TestMultipartUploadComplete {
     content = "Multipart Upload 2";
     partNumber = 2;
     Part part2 = uploadPart(OzoneConsts.KEY, uploadID, partNumber, content);
+    // Adding it to the list of uploaded part objects 
     partsList.add(part2);
 
     // complete multipart upload
@@ -108,43 +110,6 @@ public class TestMultipartUploadComplete {
     completeMultipartUpload(OzoneConsts.KEY, completeMultipartUploadRequest,
         uploadID);
 
-  }
-
-
-  @Test
-  public void testMultipartInvalidPartOrderError() throws Exception {
-
-    // Initiate multipart upload
-    String key = UUID.randomUUID().toString();
-    String uploadID = initiateMultipartUpload(key);
-
-    List<Part> partsList = new ArrayList<>();
-
-    // Upload parts
-    String content = "Multipart Upload 1";
-    int partNumber = 1;
-
-    Part part1 = uploadPart(key, uploadID, partNumber, content);
-    // Change part number
-    part1.setPartNumber(3);
-    partsList.add(part1);
-
-    content = "Multipart Upload 2";
-    partNumber = 2;
-
-    Part part2 = uploadPart(key, uploadID, partNumber, content);
-    partsList.add(part2);
-
-    // complete multipart upload
-    CompleteMultipartUploadRequest completeMultipartUploadRequest = new
-        CompleteMultipartUploadRequest();
-    completeMultipartUploadRequest.setPartList(partsList);
-    try {
-      completeMultipartUpload(key, completeMultipartUploadRequest, uploadID);
-      fail("testMultipartInvalidPartOrderError");
-    } catch (OS3Exception ex) {
-      assertEquals(S3ErrorTable.INVALID_PART_ORDER.getCode(), ex.getCode());
-    }
   }
   
 }
