@@ -59,37 +59,29 @@ public class ContentGenerator {
    */
   private final boolean hFlush;
 
-  ContentGenerator(long keySize, int bufferSize) {
-    this(keySize, bufferSize, bufferSize, false, false);
+  /**
+   * Type of flags.
+   */
+  public enum Flags {
+    hSync,
+    hFlush,
+    None,
   }
 
-  ContentGenerator(long keySize, int bufferSize, int copyBufferSize) {
-    this(keySize, bufferSize, copyBufferSize, false, false);
-  }
-
-  ContentGenerator(long keySize, int bufferSize, boolean hsync,
-                   boolean hflush) {
-    this(keySize, bufferSize, bufferSize, hsync, hflush);
-  }
-
-  ContentGenerator(long keySize, int bufferSize, int copyBufferSize,
-                   boolean hSync, boolean hFlush) {
-    this.keySize = keySize;
-    this.bufferSize = bufferSize;
-    this.copyBufferSize = copyBufferSize;
-    this.hSync = hSync;
-    this.hFlush = hFlush;
-
+  ContentGenerator(Builder objectBuild) {
+    this.keySize = objectBuild.keySize;
+    this.bufferSize = objectBuild.bufferSize;
+    this.copyBufferSize = objectBuild.copyBufferSize;
+    this.hSync = objectBuild.hSync;
+    this.hFlush = objectBuild.hFlush;
     buffer = RandomStringUtils.randomAscii(bufferSize)
         .getBytes(StandardCharsets.UTF_8);
   }
 
-  /**
-   * Write the required bytes to the output stream.
-   */
+
   public void write(OutputStream outputStream) throws IOException {
-    for (long nrRemaining = keySize;
-         nrRemaining > 0; nrRemaining -= bufferSize) {
+    for (long nrRemaining = keySize; nrRemaining > 0;
+         nrRemaining -= bufferSize) {
       int curSize = (int) Math.min(bufferSize, nrRemaining);
       if (copyBufferSize == 1) {
         for (int i = 0; i < curSize; i++) {
@@ -97,9 +89,11 @@ public class ContentGenerator {
           flushOrSync(outputStream);
         }
       } else {
+        /**
+         * Write the required bytes to the output stream.
+         */
         for (int i = 0; i < curSize; i += copyBufferSize) {
-          outputStream.write(buffer, i,
-              Math.min(copyBufferSize, curSize - i));
+          outputStream.write(buffer, i, Math.min(copyBufferSize, curSize - i));
           flushOrSync(outputStream);
         }
       }
@@ -113,6 +107,64 @@ public class ContentGenerator {
       } else if (hFlush) {
         ((FSDataOutputStream) outputStream).hflush();
       }
+    }
+  }
+
+  /**
+   * Builder Class for Content generator.
+   */
+  public static class Builder {
+
+    private long keySize = 1024;
+    private int bufferSize = 1024;
+    private int copyBufferSize = 1024;
+    private boolean hSync = false;
+    private boolean hFlush = false;
+    private String flushMode;
+
+    public Builder seyKeySize(long keysize) {
+      this.keySize = keysize;
+      return this;
+    }
+
+    public Builder setBufferSize(int buffersize) {
+      this.bufferSize = buffersize;
+      return this;
+    }
+
+    public Builder setCopyBufferSize(int copybuffersize) {
+      this.copyBufferSize = copybuffersize;
+      return this;
+    }
+
+    /**
+     * Type of flags permitted
+     * 1. hSync
+     * 2. hFlush
+     * 3. None.
+     */
+    public Builder setFlushMode(String flushmode) {
+      this.flushMode = flushmode;
+      Flags type = Flags.valueOf(flushmode);
+      switch (type) {
+      case hSync:
+        hSync = true;
+        break;
+      case hFlush:
+        hFlush = true;
+        break;
+      case None:
+        break;
+      default:
+        throw new IllegalArgumentException(
+            flushmode + " is not a valid benchmarkType.");
+      }
+      return this;
+    }
+
+    //Return the final constructed builder object
+    public ContentGenerator build() {
+      return new ContentGenerator(this);
     }
   }
 
