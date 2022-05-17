@@ -21,26 +21,33 @@ package org.apache.hadoop.ozone.container.common.volume;
 import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.annotation.Metric;
+import org.apache.hadoop.metrics2.annotation.Metrics;
 import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
-import org.apache.hadoop.metrics2.lib.MutableCounterLong;
-
-import java.io.IOException;
+import org.apache.hadoop.metrics2.lib.MutableGaugeLong;
+import org.apache.hadoop.ozone.OzoneConsts;
 
 /**
  * This class is used to track Volume IO stats for each HDDS Volume.
  */
+@Metrics(about = "Ozone Volume Information Metrics", context = OzoneConsts.OZONE)
 public class VolumeInfoStats {
 
   private String metricsSourceName = VolumeInfoStats.class.getSimpleName();
   private String VolumeRootStr;
   private HddsVolume volume;
 
-//  private @Metric MutableCounterLong storageType;
-//  private @Metric MutableCounterLong capacityUsed;
-//  private @Metric MutableCounterLong capacityAvailable;
-//  private @Metric MutableCounterLong capacityReserved;
-//  private @Metric MutableCounterLong totalBlocks;
-//  private @Metric MutableCounterLong totalCapacity;
+  private StorageType storageType;
+  private @Metric
+  MutableGaugeLong spaceUsed;
+  private @Metric
+  MutableGaugeLong spaceAvailable;
+  private @Metric
+  MutableGaugeLong spaceReserved;
+  private @Metric
+  MutableGaugeLong capacity;
+  private @Metric
+  MutableGaugeLong totalCapacity;
+
 
   @Deprecated
   public VolumeInfoStats() {
@@ -50,21 +57,17 @@ public class VolumeInfoStats {
   /**
    * @param identifier Typically, path to volume root. e.g. /data/hdds
    */
-  public VolumeInfoStats(String identifier) {
+  public VolumeInfoStats(String identifier, HddsVolume ref) {
     this.metricsSourceName += '-' + identifier;
     this.VolumeRootStr = identifier;
+    this.volume = ref;
     init();
   }
 
   public void init() {
     MetricsSystem ms = DefaultMetricsSystem.instance();
     ms.register(metricsSourceName, "Volume Info Statistics", this);
-
-    try {
-      volume = new HddsVolume.Builder(VolumeRootStr).build();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    storageType = volume.getStorageType();
   }
 
   public void unregister() {
@@ -76,49 +79,79 @@ public class VolumeInfoStats {
     return metricsSourceName;
   }
 
+  /**
+   * Return the Storage Directory for the Volume
+   */
+  public String getStorageDirectory() {
+    return volume.getStorageDir().toString();
+  }
+
+  /**
+   * Return the Storage Directory for the Volume
+   */
+  public String getDatanodeUuid() {
+    return volume.getDatanodeUuid();
+  }
+
 
   /**
    * Return the Storage type for the Volume
    */
   public String getStorageType() {
-    return volume.getStorageType().name();
+    if (storageType != volume.getStorageType()) {
+      storageType = volume.getStorageType();
+    }
+    return storageType.name();
   }
 
   /**
-   * Calculate available space use method A.
+   * Test conservative avail space.
    * |----used----|   (avail)   |++++++++reserved++++++++|
-   * |<-     capacity         ->|
-   *|<-   ---------------    total   ---------------  ->|
+   * |<------- capacity ------->|
+   * |<------------------- Total capacity -------------->|
    * A) avail = capacity - used
-   * B) Total = capacity + reserved
+   * B) avail = fsAvail - Max(reserved - other, 0);
    */
 
   /**
    * Return the Storage type for the Volume
    */
-  public long getCapacityUsed() {
-    return volume.getVolumeInfo().getCapacity();
+  public long getUsed() {
+    spaceUsed.set(volume.getVolumeInfo().getScmUsed());
+    return spaceUsed.value();
   }
 
   /**
    * Return the Total Available capacity of the Volume.
    */
-  public long getCapacityAvailable() {
-    return volume.getVolumeInfo().getAvailable();
+  public long getAvailable() {
+    spaceAvailable.set(volume.getVolumeInfo().getAvailable());
+    return spaceAvailable.value();
   }
 
   /**
    * Return the Total Reserved of the Volume.
    */
-  public long getCapacityReserved() {
-    return volume.getVolumeInfo().getReservedInBytes();
+  public long getReserved() {
+    spaceReserved.set(volume.getVolumeInfo().getReservedInBytes());
+    return spaceReserved.value();
+  }
+
+  /**
+   * Return the Total capacity of the Volume.
+   */
+  public long getCapacity() {
+    capacity.set(spaceUsed.value() + spaceAvailable.value());
+    return capacity.value();
   }
 
   /**
    * Return the Total capacity of the Volume.
    */
   public long getTotalCapacity() {
-    return (volume.getVolumeInfo().getCapacity()+volume.getVolumeInfo().getReservedInBytes());
+    totalCapacity.set(
+        spaceUsed.value() + spaceAvailable.value() + spaceReserved.value());
+    return totalCapacity.value();
   }
 
 }
