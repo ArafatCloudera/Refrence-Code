@@ -69,7 +69,6 @@ public class HddsVolume extends StorageVolume {
   private final VolumeIOStats volumeIOStats;
   private final VolumeInfoStats volumeInfoStats;
 
-
   // VERSION file properties
   private String storageID;       // id of the file system
   private String clusterID;       // id of the cluster
@@ -117,8 +116,16 @@ public class HddsVolume extends StorageVolume {
       this.clusterID = b.clusterID;
       this.datanodeUuid = b.datanodeUuid;
       this.volumeIOStats = new VolumeIOStats(b.getVolumeRootStr());
-      this.volumeInfoStats = new VolumeInfoStats(b.getVolumeRootStr());
+      this.volumeInfoStats = new VolumeInfoStats(b.getVolumeRootStr(),this);
       this.committedBytes = new AtomicLong(0);
+
+      System.out.println(volumeInfoStats.getUsed());
+      System.out.println(volumeInfoStats.getStorageType());
+      System.out.println(volumeInfoStats.getAvailable());
+      System.out.println(volumeInfoStats.getReserved());
+      System.out.println(volumeInfoStats.getTotalCapacity());
+      System.out.println(volumeInfoStats.getStorageDirectory());
+      System.out.println(volumeInfoStats.getDatanodeUuid());
 
       LOG.info("Creating HddsVolume: {} of storage type : {} capacity : {}",
           getStorageDir(), b.getStorageType(), getVolumeInfo().getCapacity());
@@ -180,7 +187,7 @@ public class HddsVolume extends StorageVolume {
     if (!getStorageDir().isDirectory()) {
       // Volume Root exists but is not a directory.
       LOG.warn("Volume {} exists but is not a directory,"
-          + " current volume state: {}.",
+              + " current volume state: {}.",
           getStorageDir().getPath(), VolumeState.INCONSISTENT);
       return VolumeState.INCONSISTENT;
     }
@@ -192,7 +199,7 @@ public class HddsVolume extends StorageVolume {
     if (!getVersionFile().exists()) {
       // Volume Root is non empty but VERSION file does not exist.
       LOG.warn("VERSION file does not exist in volume {},"
-          + " current volume state: {}.",
+              + " current volume state: {}.",
           getStorageDir().getPath(), VolumeState.INCONSISTENT);
       return VolumeState.INCONSISTENT;
     }
@@ -318,6 +325,10 @@ public class HddsVolume extends StorageVolume {
 
   public VolumeIOStats getVolumeIOStats() {
     return volumeIOStats;
+  }
+
+  public VolumeInfoStats getVolumeInfoStats() {
+    return volumeInfoStats;
   }
 
   @Override
