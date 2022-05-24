@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.hadoop.fs.StorageType;
 import org.apache.hadoop.hdds.annotation.InterfaceAudience;
 import org.apache.hadoop.hdds.annotation.InterfaceStability;
 import org.apache.hadoop.ozone.common.InconsistentStorageStateException;
@@ -77,6 +78,7 @@ public class HddsVolume extends StorageVolume {
   private int layoutVersion;      // layout version of the storage data
   private final AtomicLong committedBytes; // till Open containers become full
 
+  private final VolumeType type = VolumeType.DATA_VOLUME;     // Mentions the type of volume
   /**
    * Builder for HddsVolume.
    */
@@ -118,14 +120,6 @@ public class HddsVolume extends StorageVolume {
       this.volumeIOStats = new VolumeIOStats(b.getVolumeRootStr());
       this.volumeInfoStats = new VolumeInfoStats(b.getVolumeRootStr(),this);
       this.committedBytes = new AtomicLong(0);
-
-      System.out.println(volumeInfoStats.getUsed());
-      System.out.println(volumeInfoStats.getStorageType());
-      System.out.println(volumeInfoStats.getAvailable());
-      System.out.println(volumeInfoStats.getReserved());
-      System.out.println(volumeInfoStats.getTotalCapacity());
-      System.out.println(volumeInfoStats.getStorageDirectory());
-      System.out.println(volumeInfoStats.getDatanodeUuid());
 
       LOG.info("Creating HddsVolume: {} of storage type : {} capacity : {}",
           getStorageDir(), b.getStorageType(), getVolumeInfo().getCapacity());
@@ -187,7 +181,7 @@ public class HddsVolume extends StorageVolume {
     if (!getStorageDir().isDirectory()) {
       // Volume Root exists but is not a directory.
       LOG.warn("Volume {} exists but is not a directory,"
-              + " current volume state: {}.",
+          + " current volume state: {}.",
           getStorageDir().getPath(), VolumeState.INCONSISTENT);
       return VolumeState.INCONSISTENT;
     }
@@ -199,7 +193,7 @@ public class HddsVolume extends StorageVolume {
     if (!getVersionFile().exists()) {
       // Volume Root is non empty but VERSION file does not exist.
       LOG.warn("VERSION file does not exist in volume {},"
-              + " current volume state: {}.",
+          + " current volume state: {}.",
           getStorageDir().getPath(), VolumeState.INCONSISTENT);
       return VolumeState.INCONSISTENT;
     }
@@ -309,6 +303,10 @@ public class HddsVolume extends StorageVolume {
 
   public int getLayoutVersion() {
     return layoutVersion;
+  }
+
+  public VolumeType getType() {
+    return type;
   }
 
   public VolumeState getStorageState() {
